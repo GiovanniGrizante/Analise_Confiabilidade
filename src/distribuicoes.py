@@ -29,7 +29,7 @@ def Weibull(data, espec=None):
 
         plt.grid(True, which="both")
         # plt.legend()
-        if espec is not None:
+        if espec is None:
             salvar('CDF')
 
     def SF(espec, fit, data):
@@ -44,7 +44,7 @@ def Weibull(data, espec=None):
 
         plt.grid(True, which="both")
         # plt.legend()
-        if espec is not None:
+        if espec is None:
             salvar('SF')
 
     def PDF(espec, fit, data):
@@ -58,7 +58,7 @@ def Weibull(data, espec=None):
 
         plt.grid(True, which="both")
         # plt.legend()
-        if espec is not None:
+        if espec is None:
             salvar('PDF')
 
     def HF(espec, fit, data):
@@ -72,7 +72,7 @@ def Weibull(data, espec=None):
 
         plt.grid(True, which="both")
         # plt.legend()
-        if espec is not None:
+        if espec is None:
             salvar('HF')
 
     def Probability_Plot(espec, fit, data):
@@ -86,7 +86,7 @@ def Weibull(data, espec=None):
 
         plt.grid(True, which="both")
         # plt.legend()
-        if espec is not None:
+        if espec is None:
             salvar('Probabilidade')
 
     def Tabela(espec, fit=None, data=None):
@@ -120,7 +120,7 @@ def Weibull(data, espec=None):
         table.set_fontsize(9)
 
         plt.title("Resultados do Ajuste Weibull")
-        if espec is not None:
+        if espec is None:
             salvar('Dados')
 
     # ======================================================
@@ -140,11 +140,13 @@ def Weibull(data, espec=None):
             HF,
             Probability_Plot,
             Tabela]
+    
 
     for func in plots:
         func(espec, fit, data)
-    plt.show()
-        # if espec == 'S':
+        
+    if espec is None:
+        plt.show()
         #     def submit(text):
         #         try:
         #             valor = float(text)

@@ -2,6 +2,7 @@ from src import ingestao, queries, config
 from src import dados, distribuicoes
 import os, sys
 
+# === Funções Gerais ===
 # Função para verificação de inputs
 def questao(quest, intervalo):
     while True:
@@ -9,11 +10,23 @@ def questao(quest, intervalo):
         if resp in intervalo:
             return resp
 
-# Função para escolha da distribuição
-def escolher_dist(tipo=None):
+# Função para apresentação do menu principal
+def menu():
     os.system('cls')
     print('=== ANÁLISE DE CONFIABILIDADE ===')
-    print('\n=== Análise Específica ===') if tipo==1 else print('\n=== Análise por Criticidade ===')
+    print('\n1 - Atualizar banco de dados')
+    print('2 - Análise por criticidade')
+    print('3 - Análise específica de motor')
+    print('0 - Sair')
+
+    opcao = questao('Escolha uma opção: ', ['0', '1', '2', '3'])
+    return opcao
+
+# Função para escolha da distribuição
+def escolher_dist(espec=None):
+    os.system('cls')
+    print('=== ANÁLISE DE CONFIABILIDADE ===')
+    print('\n=== Análise Específica ===') if espec is not None else print('\n=== Análise por Criticidade ===')
     print('\n=== Escolha da Distribuição ===')
     print('\nDistribuições disponíveis:')
     print('1 - Weibull')
@@ -31,17 +44,102 @@ def escolher_dist(tipo=None):
         return list(dist_dict.values())
     return [dist_dict[dist]]
 
-# Função para apresentação do menu principal
-def menu():
+
+# === Funções para Análise Específica ===
+# Função para escolha da planta
+def escolher_planta():
+            os.system('cls')
+            print('=== ANÁLISE DE CONFIABILIDADE ===')
+            print('\n=== Análise Específica ===')
+            print('\nPlantas disponíveis:')
+            print('1 - Orgânicos')
+            print('2 - Sílica')
+            print('0 - Voltar')
+
+            planta = questao('Escolha a planta: ', ['0', '1', '2'])
+
+            planta_dict = {'1': '1913',
+                        '2': '1914'}
+
+            if planta == '0':
+                    return None
+            return planta_dict[planta]
+
+# Função para escolha da TAG
+def escolher_tag():
     os.system('cls')
     print('=== ANÁLISE DE CONFIABILIDADE ===')
-    print('\n1 - Atualizar banco de dados')
-    print('2 - Análise por criticidade')
-    print('3 - Análise específica de motor')
-    print('0 - Sair')
+    print('\n=== Análise Específica ===')
+    tag = input('\nDigite a TAG desejada (0 - Voltar): ')
 
-    opcao = questao('Escolha uma opção: ', ['0', '1', '2', '3'])
-    return opcao
+    if tag == '0':
+        return None
+    return tag
+
+# Gerenciador do fluxo para análise específica
+class AnaliseEspecifica:
+    def __init__(self):
+        self.contexto = {}
+    
+    def estado_planta(self):
+        planta = escolher_planta()
+        if planta is None:
+            return None  # Voltar ao menu principal
+        self.contexto['planta'] = planta
+        return self.estado_tag
+    
+    def estado_tag(self):
+        tag = escolher_tag()
+        if tag is None:
+            return self.estado_planta  # Voltar para escolha de planta
+        
+        data = dados.especifico(self.contexto['planta'], tag)
+        
+        if data is None:
+            print('\nNão existe dados para essa TAG!')
+            opcao = questao('1 - Nova TAG | 2 - Nova planta | 3 - Menu | 0 - Sair: ', 
+                            ['1', '2', '3', '0'])
+            
+            opcoes = {
+            '1': self.estado_tag,
+            '2': self.estado_planta,
+            '3': None,  # Menu principal
+            '0': 'EXIT'
+            }
+            return opcoes[opcao]
+        
+        self.contexto['data'] = data
+        self.contexto['tag'] = tag
+        return self.estado_resultado
+    
+    def estado_resultado(self):
+        dist = escolher_dist(espec=1)
+        for func in dist:
+            func(self.contexto['data'], espec=1)
+        
+        print('\nProcesso concluído!')
+        opcao = questao('1 - Nova TAG | 2 - Nova planta | 3 - Menu | 0 - Sair: ',
+                        ['1', '2', '3', '0'])
+        
+        opcoes = {
+            '1': self.estado_tag,
+            '2': self.estado_planta,
+            '3': None,  # Menu principal
+            '0': 'EXIT'
+        }
+        return opcoes[opcao]
+    
+    def executar(self):
+        estado_atual = self.estado_planta
+        
+        # Executa o loop enquanto a variável não é None
+        while estado_atual:
+            if estado_atual == 'EXIT':
+                sys.exit()
+            estado_atual = estado_atual()
+        
+        return  # Volta ao menu principal
+
 
 
 def main():
@@ -64,73 +162,9 @@ def main():
 
     # Análise específica
     def escolha3():
-        def escolher_planta():
-            os.system('cls')
-            print('=== ANÁLISE DE CONFIABILIDADE ===')
-            print('\n=== Análise Específica ===')
-            print('\nPlantas disponíveis:')
-            print('1 - Orgânicos')
-            print('2 - Sílica')
-            print('0 - Voltar')
-
-            planta = questao('Escolha a planta: ', ['0', '1', '2'])
-
-            planta_dict = {'1': '1913',
-                        '2': '1914'}
-
-            if planta == '0':
-                    return None
-            return planta_dict[planta]
-
-        def escolher_tag():
-            os.system('cls')
-            print('=== ANÁLISE DE CONFIABILIDADE ===')
-            print('\n=== Análise Específica ===')
-            tag = input('\nDigite a TAG desejada (0 - Voltar): ')
-
-            if tag == '0':
-                return None
-            return tag
-
-        while True:
-            planta = escolher_planta()
-
-            # Caso o usuário deseje trocar o tipo de análise, sai da função
-            if planta is None:
-                return
-            
-            while True:
-                tag = escolher_tag()
-
-                # Caso o usuário deseje trocar a planta, sai do último looping
-                if tag is None:
-                    break
-        
-                # Filtra os dados e calcula os tempos de falha
-                data = dados.especifico(planta, tag)
-
-                # Caso não haja a TAG informada, perguntar ao usuário qual opção ele deseja continuar
-                if data is None:
-                    inval = questao('\nNão existe dados para essa TAG!\n1 - Pesquisar outra TAG\n2 - Pesquisar outra planta\n3 - Menu\nEscolha a opção: ', ['1', '2', '3'])
-                    match inval:
-                        case '1':
-                            continue
-                        case '2':
-                            break
-                        case '3':
-                            return
-
-                dist = escolher_dist(1)
-                for func in dist:
-                    func(data)
-
-                print('\nProcesso concluído!')
-                reinic = questao('\nDeseja fazer outro processo?\n(1 - Sim | 2 - Não): ', ['1', '2'])
-                match reinic:
-                    case '1':
-                        return
-                    case '2':
-                        sys.exit()
+        # Versão refatorada com POO
+        analise = AnaliseEspecifica()
+        analise.executar()
         
     etapas = {'1': escolha1,
               '2': escolha2,
@@ -143,8 +177,7 @@ def main():
             sys.exit()
         
         acao = etapas.get(opcao)
-        if acao:
-            acao()
+        acao()
 
 
 if __name__ == '__main__':
