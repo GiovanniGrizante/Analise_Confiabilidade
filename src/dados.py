@@ -1,103 +1,78 @@
 import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import scipy as sp
-import os, sys, getpass, time, datetime as dt
 
-# Carregar e tratar os dados obtidos pelo SAP
-def dados():
-    # Diretório dos arquivos
-    dir = f'C:\\Users\\{getpass.getuser()}\\Evonik Industries AG\\AME Maintenance - Documentos\\AME_Manutenção\\00 - ORGANIZAÇÃO\\09 - TPT\\Time Evonik\\Giovanni\\Power BI\\Fatos\\Ordens de Serviço'
-    # === ORDENS ===
-    # Carregamento dos dados de ordens, renomeando as colunas
-    try:
-        ordens = pd.read_csv(os.path.join(dir, 'Ordens.csv'), sep=',',
-                            usecols=['Ordem', 
-                                    'Data fim real da ordem', 
-                                    'Hora para o fim real',
-                                    'Tipo de ordem',
-                                    ]).rename(columns={'Data fim real da ordem': 'Data fim', 'Hora para o fim real': 'Hora fim'})
+# Cálculo dos tempos de falha
+def tempos_falha(df, engine):
+    def periodos(engine):
+        # Data da primeira falha (Gera um dataframe)
+        df_ini = pd.read_sql('''
+                          SELECT strftime('%Y', MIN(data_hora_inicio)) AS ano_inicio
+                          FROM notas_clean''', engine)
 
-    except PermissionError:
-        raise ValueError(
-            f"""
-        Não há permissão para acessar o arquivo de criticidade.
-        Habilite a função "Manter sempre no computador" ou feche o arquivo.
+        ano_ini = df_ini.loc[0, 'ano_inicio']
+        
+        #Período inicial
+        per_ini = pd.Timestamp(year=int(ano_ini), month=1, day=1)
 
-        Caminho do arquivo:
-        {os.path.join(dir, 'Ordens.csv')}
-        """.strip())
-        sys.exit()
+        # Data da última falha
+        df_fim = pd.read_sql('''
+                            SELECT MAX(data_hora_fim) AS per_fim
+                            FROM ordens_clean''', engine)
 
-    # Remover linhas para ordens preventivas e que não foram finalizadas
-    ordens = ordens.dropna(subset=['Data fim'])
-    ordens = ordens.drop(ordens[ordens['Tipo de ordem'] == 'PM46'].index).reset_index(drop=True)
+        per_fim = pd.to_datetime(df_fim.loc[0, 'per_fim'])
 
-    # Tratamento das colunas de data e hora
-    ordens['Data fim'] = pd.to_datetime(ordens['Data fim'],errors='coerce')
-    ordens['Hora fim'] = pd.to_timedelta(ordens['Hora fim'], errors='coerce')
-    ordens['DataHora fim'] = ordens['Data fim'] + ordens['Hora fim']
+        return per_ini, per_fim
 
-    # Remoção das colunas desnecessárias
-    ordens = ordens.drop(columns=['Data fim', 'Hora fim', 'Tipo de ordem'])
+    per_ini, per_fim = periodos(engine)
 
-    # === NOTAS ===
-    # Carregamento dos dados de notas, renomeando as colunas
-    try:
-        notas = pd.read_csv(os.path.join(dir, 'Notas.csv'), sep=',',
-                            usecols=['Data da nota', 
-                                    'Ínício da avaria (hora)', 
-                                    'Ordem', 'Local de instalação',
-                                    ]).rename(columns={'Data da nota': 'Data início', 'Ínício da avaria (hora)': 'Hora início'})
-    except PermissionError:
-        raise ValueError(
-            f"""
-        Não há permissão para acessar o arquivo de criticidade.
-        Habilite a função "Manter sempre no computador" ou feche o arquivo.
+    # Converte os dados de tempo para não ser string
+    df['data_hora_inicio'] = pd.to_datetime(df['data_hora_inicio'])
+    df['data_hora_fim'] = pd.to_datetime(df['data_hora_fim'])
 
-        Caminho do arquivo:
-        {os.path.join(dir, 'Notas.csv')}
-        """.strip())
-        sys.exit()
+    # Cálculo das diferenças entre as bordas e os tempos de inicio e fim
+    diff_inicio = round(((df['data_hora_inicio'].iloc[0] - per_ini).total_seconds()/3600), 2)
+    diff_fim = round(((per_fim - df['data_hora_fim'].iloc[-1]).total_seconds()/3600), 2)
 
-    # Tratamento das colunas de data e hora
-    notas['Data início'] = pd.to_datetime(notas['Data início'], errors='coerce')
-    notas['Hora início'] = pd.to_timedelta(notas['Hora início'], errors='coerce')
-    notas['DataHora início'] = notas['Data início'] + notas['Hora início']
-
-    # Remoção das colunas desnecessárias
-    notas = notas.drop(columns=['Data início', 'Hora início'])
-
-    # Mescla os DataFrames de ordens e notas com base na coluna 'Ordem'
-    df = pd.merge(ordens, notas, on='Ordem', how='inner')
-    df = df[['Local de instalação', 'DataHora início', 'DataHora fim']]
-
-    per_ini = df['DataHora início'][0].replace(day=1, month=1, hour=0, minute=0, second=0)
-    per_fim = df['DataHora fim'][len(df)-1]
+    # Gerar lista com os tempos de operação
+    diff_ordens = (
+            (df['data_hora_inicio'].shift(-1) - df['data_hora_fim'])
+            .dt.total_seconds()/3600
+            ).round(2)[:-1].tolist()
     
-    return df, per_ini, per_fim
+    # Se houver 'DataHora fim' > 'DataHora início', não deve ser considerado
+    diff_ordens = [x for x in diff_ordens if x > 0]
+
+    data = [diff_inicio] + diff_ordens
+
+    # Se 'DataHora fim' for o período final de análise, não considera
+    if diff_fim > 0:
+        data.append(diff_fim)
+
+    return data
 
 # Motores que possuam registro no sistema SAP
-def especifico(df):
-    planta = input('Informe o código da planta (1913 - Orgânicos | 1914 - Sílica | Em branco para geral): ')
-    equip = "00" + input('Informe o TAG do equipamento: ')
+def especifico(planta, tag):
+    engine = get_engine()
 
-    # Filtra os dados do DataFrame com base nos filtros fornecidos pelo usuário
-    filtros = [planta, equip]
-    df = df[
-        df['Local de instalação']
-        .apply(lambda x: planta in x and equip in x)
-    ].reset_index(drop=True)
-
+    df = pd.read_sql('''
+            SELECT
+                n.data_hora_inicio AS data_hora_inicio,
+                o.data_hora_fim AS data_hora_fim
+            FROM ordens_clean o
+            INNER JOIN notas_clean n
+                ON o.ordem = n.ordem
+            WHERE n.local_instalacao LIKE ?
+            AND n.local_instalacao LIKE ?
+            ORDER BY n.data_hora_inicio
+            ''',
+            engine,
+            params=(f"%{planta}%", f"%{tag}%")
+        )
+    
     if df.empty:
-        raise ValueError('Nenhum dado encontrado para os filtros fornecidos.')
-        sys.exit()
+        return None
 
-    if df['Local de instalação'].nunique() > 1:
-        raise ValueError('\nAtenção: Existem dados de mais de um local de instalação. Verifique os filtros fornecidos.')
-        sys.exit()
-
-    return df
+    data = tempos_falha(df, engine)
+    return data
 
 # Motores que possuem nível de criticidade em cada planta
 def criticidade(df):
@@ -156,21 +131,7 @@ def criticidade(df):
 
     return df_filtrado
 
-# Executar os comandos
-def main():
-    while True:
-        os.system('cls')
-        df, per_ini, per_fim = dados()
-
-        espec = input('Deseja realizar uma análise específica? (S/N): ').strip().upper()
-        resp = ['S','N']
-
-        if espec not in resp:
-            print('\nResposta inválida. Por favor, responda com "S" para sim ou "N" para não.')
-            time.sleep(4)
-        elif espec == 'S':
-            df = especifico(df)
-            return df, per_ini, per_fim, espec
-        else:
-            df = criticidade(df)
-            return df, per_ini, per_fim, espec
+if __name__ == '__main__':
+    from config import get_engine
+else:
+    from src.config import get_engine

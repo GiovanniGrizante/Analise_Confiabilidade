@@ -1,8 +1,8 @@
 import pandas as pd
 from pathlib import Path
-from config import get_engine
+from src.config import get_engine
 
-
+# Tratamento dos dados de ordens
 def ordens_clean(engine):
     drop = """
     DROP TABLE IF EXISTS ordens_clean;
@@ -22,6 +22,7 @@ def ordens_clean(engine):
         conn.exec_driver_sql(drop)
         conn.exec_driver_sql(create)
 
+# Tratamento dos dados de notas
 def notas_clean(engine):
     drop = """
     DROP TABLE IF EXISTS notas_clean;
@@ -43,6 +44,7 @@ def notas_clean(engine):
         conn.exec_driver_sql(drop)
         conn.exec_driver_sql(create)
 
+# Execução das funções
 def main():
     engine = get_engine()
 

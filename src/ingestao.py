@@ -1,7 +1,7 @@
 import pandas as pd
 from sqlalchemy import create_engine
 from pathlib import Path
-from config import get_engine
+from src.config import get_engine
 
 # Leitura e ingestão dos dados na database
 def db_ingestion(dir_raw, engine):
