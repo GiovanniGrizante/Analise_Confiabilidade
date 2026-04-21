@@ -8,3 +8,5 @@ def get_engine():
     
     return create_engine(f"sqlite:///{dir_db}")
 
+def create_folders():
+    pass

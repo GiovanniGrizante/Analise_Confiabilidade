@@ -1,7 +1,20 @@
 import pandas as pd
-from sqlalchemy import create_engine
+from sqlalchemy import inspect
 from pathlib import Path
-from src.config import get_engine
+from src.config import get_engine, create_folders
+
+
+def db_verification(dir_raw, engine):
+    inspector = inspect(engine)
+    essential_files = {'Notas': 'Específica', 
+                       'Ordens': 'Específica',
+                       'Criticidade': 'por Criticidade'}
+    
+    for file, func in essential_files.items():
+        if not inspector.has_table(file.lower() + '_raw'):
+            print(f'''\nERRO: Devido a falta do arquivo {file},
+                  a função "{func}" dará erro!
+                  \n\n Adicionar o arquivo na pasta:\n\n{dir_raw}''')
 
 # Leitura e ingestão dos dados na database
 def db_ingestion(dir_raw, engine):
@@ -41,6 +54,7 @@ def main():
 
     # Adiciona os dados no database
     db_ingestion(dir_raw, engine)
+    db_verification(dir_raw, engine)
 
 if __name__ == '__main__':
     main()

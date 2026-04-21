@@ -1,6 +1,6 @@
 from src import ingestao, queries, config
 from src import dados, distribuicoes
-import os, sys, matplotlib.pyplot as plt
+import os, sys, matplotlib.pyplot as plt, time
 
 # === Funções Gerais ===
 # Função para verificação de inputs
@@ -222,18 +222,17 @@ class AnaliseEspecifica:
         return  # Volta ao menu principal
 
 
-
 def main():
     # Atualizar banco de dados
     def escolha1():
+        print('Processando...')
+        
         ingestao.main()
         queries.main()
-
+        time.sleep(4)
+        
         print('\nProcesso concluído!')
-        reinic = questao('\nDeseja fazer outro processo?\n(1 - Sim | 2 - Não): ', ['1', '2'])
-        if reinic == '2':
-            sys.exit()
-
+        
     # Análise por criticidade
     def escolha2():
         print('Em processo')
@@ -250,6 +249,9 @@ def main():
     etapas = {'1': escolha1,
               '2': escolha2,
               '3': escolha3}
+    
+    # Função para criação das pastas no diretório
+    config.create_engine()
 
     while True:
         opcao = menu()
