@@ -1,8 +1,6 @@
-from reliability.Fitters import Fit_Weibull_2P, Fit_Exponential_1P, Fit_Lognormal_2P
+from reliability.Fitters import Fit_Exponential_1P, Fit_Lognormal_2P
 from reliability.Probability_plotting import plot_points, Weibull_probability_plot
 import matplotlib.pyplot as plt
-from matplotlib.widgets import TextBox
-import os, sys, time, inspect
 
 # Distribuição exponencial - Assume falhas aleatórias, taxa de falha constante.
 # Bom para eletrônicos, sensores, componentes sem desgaste.
@@ -15,13 +13,21 @@ import os, sys, time, inspect
 
 # Distribuição lognormal - Boa quando a falha depende de várias pequenas causas
 
-def Weibull(data, espec=None):
+class Weibull:
+    def __init__(self, data):
+        self.data = data
+        
+        from reliability.Fitters import Fit_Weibull_2P
+        
+        self.fit = Fit_Weibull_2P(failures=self.data, 
+                                  show_probability_plot=False, 
+                                  print_results=False)
     
-    def CDF(espec, fit, data):
+    def CDF(self):
         fig = plt.figure(figsize=(8, 5))
         
-        fit.distribution.CDF(label="Weibull ajustada")
-        plot_points(failures=data, func="CDF")
+        self.fit.distribution.CDF(label="Weibull ajustada")
+        plot_points(failures=self.data, func="CDF")
 
         plt.title("Função Acumulada de Falha (CDF)")
         plt.xlabel('Horas')
@@ -29,14 +35,13 @@ def Weibull(data, espec=None):
 
         plt.grid(True, which="both")
         # plt.legend()
-        if espec is None:
-            salvar('CDF')
+        return fig
 
-    def SF(espec, fit, data):
+    def SF(self):
         fig = plt.figure(figsize=(8, 5))
 
-        fit.distribution.SF(label='Weibull ajustada')
-        plot_points(failures=data, func='SF')
+        self.fit.distribution.SF(label='Weibull ajustada')
+        plot_points(failures=self.data, func='SF')
 
         plt.title("Função de Sobrevivência (SF)")
         plt.xlabel('Horas')
@@ -44,13 +49,12 @@ def Weibull(data, espec=None):
 
         plt.grid(True, which="both")
         # plt.legend()
-        if espec is None:
-            salvar('SF')
+        return fig
 
-    def PDF(espec, fit, data):
+    def PDF(self):
         fig = plt.figure(figsize=(8, 5))
 
-        fit.distribution.PDF(label='Weibull ajustada')
+        self.fit.distribution.PDF(label='Weibull ajustada')
 
         plt.title("Função de Densidade de Probabilidade (PDF)")
         plt.xlabel('Horas')
@@ -58,13 +62,12 @@ def Weibull(data, espec=None):
 
         plt.grid(True, which="both")
         # plt.legend()
-        if espec is None:
-            salvar('PDF')
+        return fig
 
-    def HF(espec, fit, data):
+    def HF(self):
         fig = plt.figure(figsize=(8, 5))
 
-        fit.distribution.HF(label='Weibull ajustada')
+        self.fit.distribution.HF(label='Weibull ajustada')
 
         plt.title("Função de Taxa de Falha (HF)")
         plt.xlabel('Horas')
@@ -72,13 +75,12 @@ def Weibull(data, espec=None):
 
         plt.grid(True, which="both")
         # plt.legend()
-        if espec is None:
-            salvar('HF')
+        return fig
 
-    def Probability_Plot(espec, fit, data):
+    def Probabilidade(self):
         fig = plt.figure(figsize=(8, 5))
 
-        Weibull_probability_plot(failures=data)
+        Weibull_probability_plot(failures=self.data)
 
         plt.title("Probabilidade Weibull")
         plt.xlabel('Horas')
@@ -86,26 +88,25 @@ def Weibull(data, espec=None):
 
         plt.grid(True, which="both")
         # plt.legend()
-        if espec is None:
-            salvar('Probabilidade')
+        return fig
 
-    def Tabela(espec, fit=None, data=None):
+    def Tabela(self):
         fig = plt.figure(figsize=(8, 5))
         
         plt.axis('off')  # remove eixos
 
         # Dados da tabela
         cell_text = [
-            ["Alpha (α)", f"{fit.alpha:.2f}", f"{fit.alpha_SE:.2f}",
-            f"{fit.alpha_lower:.2f}", f"{fit.alpha_upper:.2f}"],
+            ["Alpha (α)", f"{self.fit.alpha:.2f}", f"{self.fit.alpha_SE:.2f}",
+            f"{self.fit.alpha_lower:.2f}", f"{self.fit.alpha_upper:.2f}"],
 
-            ["Beta (β)", f"{fit.beta:.4f}", f"{fit.beta_SE:.4f}",
-            f"{fit.beta_lower:.4f}", f"{fit.beta_upper:.4f}"],
+            ["Beta (β)", f"{self.fit.beta:.4f}", f"{self.fit.beta_SE:.4f}",
+            f"{self.fit.beta_lower:.4f}", f"{self.fit.beta_upper:.4f}"],
 
-            ["Log-likelihood", f'{fit.loglik:.3f}' if isinstance(fit.loglik, (int,float)) else fit.loglik, "-", "-", "-"],
-            ["AICc", f"{fit.AICc:.3f}" if isinstance(fit.AICc, (int,float)) else fit.AICc, "-", "-", "-"],
-            ["BIC", f"{fit.BIC:.3f}" if isinstance(fit.BIC, (int,float)) else fit.BIC, "-", "-", "-"],
-            ["Anderson-Darling", f"{fit.AD:.4f}" if isinstance(fit.AD, (int,float)) else fit.AD, "-", "-", "-"],
+            ["Log-likelihood", f'{self.fit.loglik:.3f}' if isinstance(self.fit.loglik, (int,float)) else self.fit.loglik, "-", "-", "-"],
+            ["AICc", f"{self.fit.AICc:.3f}" if isinstance(self.fit.AICc, (int,float)) else self.fit.AICc, "-", "-", "-"],
+            ["BIC", f"{self.fit.BIC:.3f}" if isinstance(self.fit.BIC, (int,float)) else self.fit.BIC, "-", "-", "-"],
+            ["Anderson-Darling", f"{self.fit.AD:.4f}" if isinstance(self.fit.AD, (int,float)) else self.fit.AD, "-", "-", "-"],
         ]
 
         table = plt.table(
@@ -120,52 +121,29 @@ def Weibull(data, espec=None):
         table.set_fontsize(9)
 
         plt.title("Resultados do Ajuste Weibull")
-        if espec is None:
-            salvar('Dados')
+        return fig
 
-    # ======================================================
+    def executar(self, dist):
+        graficos = {}
+        for distribuicao in dist:
+            graficos[distribuicao] = getattr(self, distribuicao)
+        return graficos
 
-    def salvar(nome):
+
+class Exponencial:
+    def __init__(self, dados, espec):
         return 0
-        # os.makedirs(os.path.join('Dados', df['Planta'][0], df['Criticidade'][0], tag, dist), exist_ok=True)
-        # plt.savefig(os.path.join('Dados', df['Planta'][0], df['Criticidade'][0], tag, dist, f'{nome}.png'),
-        #                         dpi=300, bbox_inches="tight")
-        # plt.close()
-
-    fit = Fit_Weibull_2P(failures=data, show_probability_plot=False, print_results=False)
-
-    plots = [CDF,
-            SF,
-            PDF,
-            HF,
-            Probability_Plot,
-            Tabela]
     
-
-    for func in plots:
-        func(espec, fit, data)
-        
-    if espec is None:
-        plt.show()
-        #     def submit(text):
-        #         try:
-        #             valor = float(text)
-        #         except ValueError:
-        #             pass
-        
-        #     # Área do TextBox
-        #     axbox = plt.axes([0.2, 0.1, 0.6, 0.075])
-        #     text_box = TextBox(axbox, 'a = ', initial="1")
-
-        #     text_box.on_submit(submit)
-        #     plt.show()
+    def executar(data, espec=None):
+        return 0
 
 
-def Exponencial(data, espec=None):
-    return 0
-
-def Lognormal(data, espec=None):
-    return 0
+class Lognormal:
+    def __init__(self, dados, espec):
+        return 0
+    
+    def executar(data, espec=None):
+        return 0
 
 
 # def Exponencial(data, salvar=None):
