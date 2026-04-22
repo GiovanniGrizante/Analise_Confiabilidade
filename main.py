@@ -9,6 +9,8 @@ def questao(quest, intervalo):
         resp = input(quest)
         if resp in intervalo:
             return resp
+            # Limpa a linha anterior
+        sys.stdout.write('\033[F\033[K')
 
 # Função para apresentação do menu principal
 def menu():
@@ -23,11 +25,12 @@ def menu():
     return opcao
 
 # Função para escolha do método (Weibull, Exponencial...)
-def escolher_metodo(espec=None):
+def escolher_metodo(self, espec=None):
     os.system('cls')
     print('=== ANÁLISE DE CONFIABILIDADE ===')
     print('\n=== Análise por Criticidade ===') if espec is None else print('\n=== Análise Específica ===')
     print('\n=== Escolha do Método de Distribuição ===')
+    print(f'\nPlanta: {self.contexto['planta']} | TAG: {self.contexto['tag']}')
     print('\nMétodos disponíveis:')
     print('1 - Weibull')
     print('2 - Exponencial')
@@ -48,11 +51,15 @@ def escolher_metodo(espec=None):
     return [met_dict[met]]
 
 # Função para escolha da distribuição (CDF, SF, PDF...)
-def escolher_dist(espec=None):
+def escolher_dist(self, espec=None):
     os.system('cls')
     print('=== ANÁLISE DE CONFIABILIDADE ===')
     print('\n=== Análise por Criticidade ===') if espec is None else print('\n=== Análise Específica ===')
     print('\n=== Escolha da Distribuição ===')
+    if len(self.contexto['metodo']) == 1:
+        print(f'\nPlanta: {self.contexto['planta']} | TAG: {self.contexto['tag']} | Método: {self.contexto['metodo'][0].__name__}')
+    else:
+        print(f'\nPlanta: {self.contexto['planta']} | TAG: {self.contexto['tag']} | Método: Todos')
     print('\nDistribuições disponíveis:')
     print('1 - CDF')
     print('2 - SF')
@@ -85,6 +92,7 @@ def escolher_planta():
             os.system('cls')
             print('=== ANÁLISE DE CONFIABILIDADE ===')
             print('\n=== Análise Específica ===')
+            print('\n=== Escolha da Planta ===')
             print('\nPlantas disponíveis:')
             print('1 - Orgânicos')
             print('2 - Sílica')
@@ -98,11 +106,15 @@ def escolher_planta():
             return planta_dict[planta]
 
 # Função para escolha da TAG
-def escolher_tag():
+def escolher_tag(self):
     os.system('cls')
     print('=== ANÁLISE DE CONFIABILIDADE ===')
     print('\n=== Análise Específica ===')
-    tag = input('\nDigite a TAG desejada (0 - Voltar): ')
+    print('\n=== Escolha da TAG ===')
+    print(f'\nPlanta: {self.contexto['planta']}')
+    print('\n0 - Voltar')
+
+    tag = input('\nDigite a TAG desejada: ')
 
     return tag
 
@@ -117,12 +129,13 @@ class AnaliseEspecifica:
         planta = escolher_planta()
         if planta == '0':
             return None  # Voltar ao menu principal
+        self.contexto['planta'] = {}
         self.contexto['planta'] = planta
         return self.estado_tag
     
     # Menu para escolha da TAG
     def estado_tag(self):
-        tag = escolher_tag()
+        tag = escolher_tag(self)
         if tag == '0':
             return self.estado_planta  # Voltar para escolha de planta
         
@@ -130,6 +143,10 @@ class AnaliseEspecifica:
         
         if data is None:
             print('\nNão existe dados para essa TAG!')
+            print('\n1 - Outra TAG')
+            print('2 - Outra planta')
+            print('3 - Menu')
+            print('0 - Sair')
             
             opcoes = {
             '1': self.estado_tag,
@@ -138,76 +155,112 @@ class AnaliseEspecifica:
             '0': 'EXIT'
             }
             
-            opcao = questao('1 - Nova TAG | 2 - Nova planta | 3 - Menu | 0 - Sair: ', 
+            opcao = questao('\nEscolha a opção: ', 
                             list(opcoes.keys()))
             
             return opcoes[opcao]
         
+        self.contexto['data'] = {}
         self.contexto['data'] = data
+        self.contexto['tag'] = {}
         self.contexto['tag'] = tag
-        return self.estado_resultado
+        return self.estado_metodo
     
     # Menu para escolha do método de distribuição (Weibull, Exponencial...)
     def estado_metodo(self):
         # Atribuir os métodos de distribuições a serem executados
-        met = escolher_metodo(espec=1)
-        if met == '0':
+        met = escolher_metodo(self, espec=1)
+        if met == ['0']:
             return self.estado_tag
         
+        self.contexto['metodo'] = {}
         self.contexto['metodo'] = met
         return self.estado_distribuicao
         
     # Menu para escolha da distribuição (CDF, SF, PDF ...)
     def estado_distribuicao(self):
+        # Fechar todas as figuras geradas
+        plt.close('all')
+
         # Atribuir as distribuições a serem executados
-        dist = escolher_dist(espec=1)
+        dist = escolher_dist(self, espec=1)
         if dist == ['0']:
             return self.estado_metodo
         
         # Iterar nas classes
         for classe_metodo in self.contexto['metodo']:
+            self.contexto['graficos'] = {}
+
             # Cria instância da classe (Weibull, Exponencial...)
             # Os parâmetros passados para a classe vão para __init__
             analisador = classe_metodo(self.contexto['data'])
             
             # Executa os tipos de distribuição escolhidos (CDF, SF...)
             self.contexto['graficos'] = analisador.executar(dist)
+
+            if len(self.contexto['metodo']) == 1:
+                print(f'\nGráfico {dist[0]} concluído!') if len(dist) == 1 else print('Todos os gráficos concluídos!')
+            else:
+                print(f'\n Gráfico {dist[0]} - Método {self.contexto['metodo']} concluído') if len(dist) == 1 else print(f'Todos os gráficos - Método {self.contexto['metodo']} concluído!')
+            print('\n1 - Apresentar')
+            print('2 - Salvar')
+            print('3 - Continuar')
+            print('4 - Voltar')
             
             opcoes_graf = {'1': self.apresentar_grafico,
                            '2': self.salvar_grafico,
-                           '3': '3'}
+                           '3': '3',
+                           '4': self.estado_distribuicao}
             
-            usar_graf = questao(f'''\nGráficos do método {classe_metodo.__name__} gerados!
-                                \n1 - Apresentar
-                                \n2 - Salvar
-                                \n3 - Continuar
-                                \nEscolha uma opção: ''', list(opcoes_graf))
+            usar_graf = questao('Escolha uma opção: ',list(opcoes_graf))
             
             if usar_graf != '3':
                 return opcoes_graf[usar_graf]
-                    
-        print('\nProcesso concluído!')
-        opcao = questao('1 - Nova TAG | 2 - Nova planta | 3 - Menu | 0 - Sair: ',
-                        ['1', '2', '3', '0'])
+
+        return self.estado_concluido
         
+    # Menu de conclusão para o usuário decidir se deseja outra operação
+    def estado_concluido(self):
+        os.system('cls')
+        print('=== ANÁLISE DE CONFIABILIDADE ===')
+        print('\n=== Análise Específica ===')
+        print('\n=== Conclusão ===')
+        if len(self.contexto['metodo']) == 1:
+            print(f'\nPlanta: {self.contexto['planta']} | TAG: {self.contexto['tag']} | Método: {self.contexto['metodo'][0].__name__}')
+        else:
+            print(f'\nPlanta: {self.contexto['planta']} | TAG: {self.contexto['tag']} | Método: Todos')
+        #print('\nProcesso concluído com sucesso!')
+        print('\n1 - Outra distribuição')
+        print('2 - Outro método')
+        print('3 - Outra TAG')
+        print('4 - Outra planta')
+        print('5 - Menu')
+        print('0 - Sair')
+
         opcoes = {
-            '1': self.estado_tag,
-            '2': self.estado_planta,
-            '3': None,  # Menu principal
+            '1': self.estado_distribuicao,
+            '2': self.estado_metodo,
+            '3': self.estado_tag,
+            '4': self.estado_planta,
+            '5': None,  # Menu principal
             '0': 'EXIT'
         }
+
+        opcao = questao('\nEscolha uma opção: ', list(opcoes.keys()))
         return opcoes[opcao]
-            
+
     # Função para apresentar os gráficos ao usuário
     def apresentar_grafico(self):
-        for figura in self.contexto['graficos'].values():
-            figura.show()
-        input('\nPressione Enter para fechar todas as figuras e continuar...')
+        plt.show(block=False)
+        input('\nPressione Enter para fechar as figuras e continuar...')
         plt.close('all')
-    
+        return self.estado_concluido
+
     # Função para salvar os gráficos na pasta do usuário
     def salvar_grafico(self):
-        pass
+        print('Em processo...')
+        time.sleep(4)
+        return self.estado_concluido
         
     # Lógica de execução
     def executar(self):
@@ -236,7 +289,7 @@ def main():
     # Análise por criticidade
     def escolha2():
         print('Em processo')
-        sys.exit()
+        time.sleep(3)
         # dados.crit()
         # distribuicoes.main()
 
@@ -251,7 +304,7 @@ def main():
               '3': escolha3}
     
     # Função para criação das pastas no diretório
-    config.create_engine()
+    config.create_folders()
 
     while True:
         opcao = menu()

@@ -12,9 +12,9 @@ def db_verification(dir_raw, engine):
     
     for file, func in essential_files.items():
         if not inspector.has_table(file.lower() + '_raw'):
-            print(f'''\nERRO: Devido a falta do arquivo {file},
-                  a função "{func}" dará erro!
-                  \n\n Adicionar o arquivo na pasta:\n\n{dir_raw}''')
+            print(f'''\nERRO: Devido a falta do arquivo {file},\na função "{func}" dará erro!
+            \nAdicionar o arquivo na pasta:\n\n{dir_raw}''')
+            input('\nPressione Enter para continar...')
 
 # Leitura e ingestão dos dados na database
 def db_ingestion(dir_raw, engine):
