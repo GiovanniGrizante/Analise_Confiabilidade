@@ -1,6 +1,9 @@
 from src import ingestao, queries, config
 from src import dados, distribuicoes
 import os, sys, matplotlib.pyplot as plt, time
+from pathlib import Path
+
+dir_base = Path(__file__).resolve().parent
 
 # === Funções Gerais ===
 # Função para verificação de inputs
@@ -42,7 +45,7 @@ def escolher_metodo(self, espec=None):
                 '1': distribuicoes.Weibull,
                 '2': distribuicoes.Exponencial,
                 '3': distribuicoes.Lognormal,
-                '4': '4'}
+                '4': 'Todos'}
 
     met = questao('Escolha a distribuição: ', list(met_dict.keys()))
 
@@ -55,11 +58,16 @@ def escolher_dist(self, espec=None):
     os.system('cls')
     print('=== ANÁLISE DE CONFIABILIDADE ===')
     print('\n=== Análise por Criticidade ===') if espec is None else print('\n=== Análise Específica ===')
-    print('\n=== Escolha da Distribuição ===')
-    if len(self.contexto['metodo']) == 1:
-        print(f'\nPlanta: {self.contexto['planta']} | TAG: {self.contexto['tag']} | Método: {self.contexto['metodo'][0].__name__}')
-    else:
-        print(f'\nPlanta: {self.contexto['planta']} | TAG: {self.contexto['tag']} | Método: Todos')
+    print('\n=== Escolha da Distribuição ===\n')
+
+    if espec is None:
+        msg = f'Planta: {self.contexto['planta']} | TAG: {self.contexto['tag']} | Método: '
+        if len(self.contexto['metodo']) == 1:
+            print(msg + self.contexto['metodo'][0].__name__)
+        else:
+            print(msg + 'Todos')
+
+
     print('\nDistribuições disponíveis:')
     print('1 - CDF')
     print('2 - SF')
@@ -186,6 +194,9 @@ class AnaliseEspecifica:
         dist = escolher_dist(self, espec=1)
         if dist == ['0']:
             return self.estado_metodo
+
+        self.contexto['distribuicao'] = {}
+        self.contexto['distribuicao'] = dist
         
         # Iterar nas classes
         for classe_metodo in self.contexto['metodo']:
@@ -198,10 +209,12 @@ class AnaliseEspecifica:
             # Executa os tipos de distribuição escolhidos (CDF, SF...)
             self.contexto['graficos'] = analisador.executar(dist)
 
-            if len(self.contexto['metodo']) == 1:
-                print(f'\nGráfico {dist[0]} concluído!') if len(dist) == 1 else print('Todos os gráficos concluídos!')
+            if len(dist) == 1:
+                msg = f'Gráfico {dist[0]} - Método {classe_metodo.__name__} concluído'
             else:
-                print(f'\n Gráfico {dist[0]} - Método {self.contexto['metodo']} concluído') if len(dist) == 1 else print(f'Todos os gráficos - Método {self.contexto['metodo']} concluído!')
+                msg = f'Todos os gráficos - Método {classe_metodo.__name__} concluído!'
+            
+            print(f'\n{msg}')
             print('\n1 - Apresentar')
             print('2 - Salvar')
             print('3 - Continuar')
@@ -221,15 +234,32 @@ class AnaliseEspecifica:
         
     # Menu de conclusão para o usuário decidir se deseja outra operação
     def estado_concluido(self):
+        # Dados para o print
+        # --- Método ---
+        if len(self.contexto['metodo']) == 1:
+            metodo = self.contexto['metodo'][0].__name__
+        else:
+            metodo = 'Todos'
+
+        # --- Distribuição ---
+        if len(self.contexto['distribuicao']) == 1:
+            distribuicao = self.contexto['distribuicao'][0]
+        else:
+            distribuicao = 'Todas'
+
+        msg = (
+            f"Planta: {self.contexto['planta']} | "
+            f"TAG: {self.contexto['tag']} | "
+            f"Método: {metodo} | "
+            f"Distribuição: {distribuicao}"
+        )
+
+
         os.system('cls')
         print('=== ANÁLISE DE CONFIABILIDADE ===')
         print('\n=== Análise Específica ===')
         print('\n=== Conclusão ===')
-        if len(self.contexto['metodo']) == 1:
-            print(f'\nPlanta: {self.contexto['planta']} | TAG: {self.contexto['tag']} | Método: {self.contexto['metodo'][0].__name__}')
-        else:
-            print(f'\nPlanta: {self.contexto['planta']} | TAG: {self.contexto['tag']} | Método: Todos')
-        #print('\nProcesso concluído com sucesso!')
+        print(f'\n{msg}')
         print('\n1 - Outra distribuição')
         print('2 - Outro método')
         print('3 - Outra TAG')
@@ -258,8 +288,16 @@ class AnaliseEspecifica:
 
     # Função para salvar os gráficos na pasta do usuário
     def salvar_grafico(self):
-        print('Em processo...')
-        time.sleep(4)
+        for classe in self.contexto['metodo']:
+            metodo = classe.__name__
+
+            caminho = (dir_base / 'images' / self.contexto['planta'] / self.contexto['tag'] / metodo)
+            caminho.mkdir(parents=True, exist_ok=True)
+
+            for nome, fig in self.contexto['graficos'].items():
+                arquivo = caminho / f"{nome}.png"
+                fig.savefig(arquivo, dpi=300)
+
         return self.estado_concluido
         
     # Lógica de execução
@@ -282,20 +320,20 @@ def main():
         
         ingestao.main()
         queries.main()
-        time.sleep(4)
+        time.sleep(2)
         
         print('\nProcesso concluído!')
+        time.sleep(3)
         
     # Análise por criticidade
     def escolha2():
-        print('Em processo')
-        time.sleep(3)
+        dados.criticidade()
         # dados.crit()
         # distribuicoes.main()
 
     # Análise específica
     def escolha3():
-        # Versão refatorada com POO
+        # Versão refatorada com POO (Máquina de estados)
         analise = AnaliseEspecifica()
         analise.executar()
         
@@ -304,7 +342,8 @@ def main():
               '3': escolha3}
     
     # Função para criação das pastas no diretório
-    config.create_folders()
+    if not os.path.isdir(dir_base / 'data' / 'raw') or not os.path.isdir(dir_base / 'images'):
+        config.create_folders(dir_base)
 
     while True:
         opcao = menu()

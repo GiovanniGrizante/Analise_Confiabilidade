@@ -1,0 +1,1 @@
+# Arquivo para interpretação das distribuições, métricas e tomada de decisão.

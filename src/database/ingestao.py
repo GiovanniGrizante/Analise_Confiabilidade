@@ -33,7 +33,11 @@ def db_ingestion(dir_raw, engine):
             continue
 
         reader = readers_form[file.suffix.lower()]
-        data = reader(file, dtype={"Ordem": "string"})
+
+        data = reader(file)
+
+        if 'Ordem' in data.columns:
+            data["Ordem"] = data["Ordem"].astype("string")
 
         data.to_sql(
             name = f'{file.stem.lower()}_raw',
