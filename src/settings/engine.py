@@ -7,6 +7,3 @@ def get_engine():
     dir_db.parent.mkdir(parents=True, exist_ok=True)
     
     return create_engine(f"sqlite:///{dir_db}")
-
-def create_folders():
-    pass

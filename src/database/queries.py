@@ -1,6 +1,6 @@
 import pandas as pd
 from pathlib import Path
-from src.config import get_engine
+from ..settings.engine import get_engine
 
 # Tratamento dos dados de ordens
 def ordens_clean(engine):

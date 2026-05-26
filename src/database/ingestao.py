@@ -1,9 +1,10 @@
+from ..settings.engine import get_engine
+
 import pandas as pd
 from sqlalchemy import inspect
 from pathlib import Path
-from src.config import get_engine, create_folders
 
-
+# Verificação da ingestão do database
 def db_verification(dir_raw, engine):
     inspector = inspect(engine)
     essential_files = {'Notas': 'Específica', 
@@ -16,7 +17,7 @@ def db_verification(dir_raw, engine):
             \nAdicionar o arquivo na pasta:\n\n{dir_raw}''')
             input('\nPressione Enter para continar...')
 
-# Leitura e ingestão dos dados na database
+# Leitura e ingestão dos dados no database
 def db_ingestion(dir_raw, engine):
 
     readers_form = {
@@ -42,15 +43,16 @@ def db_ingestion(dir_raw, engine):
             index = False
         )
 
-# Definição dos diretórios e criação da database
+# Definição dos diretórios e criação do database
 def main():
-    dir_base = Path(__file__).resolve().parent.parent
-
-    # Gera e nomeia o database
-    engine = get_engine()
+    # Obtém o diretório raiz do código
+    dir_base = Path(__file__).resolve().parent.parent.parent
 
     # Diretório - Raw Data
     dir_raw = dir_base / 'data' / 'raw'
+
+    # Gera e nomeia o database
+    engine = get_engine()
 
     # Adiciona os dados no database
     db_ingestion(dir_raw, engine)
