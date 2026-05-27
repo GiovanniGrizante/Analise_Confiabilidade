@@ -236,7 +236,7 @@ class Exponencial:
             ["Log-likelihood", f'{self.fit.loglik:.3f}' if isinstance(self.fit.loglik, (int,float)) else self.fit.loglik, "-", "-", "-"],
             ["AICc", f"{self.fit.AICc:.3f}" if isinstance(self.fit.AICc, (int,float)) else self.fit.AICc, "-", "-", "-"],
             ["BIC", f"{self.fit.BIC:.3f}" if isinstance(self.fit.BIC, (int,float)) else self.fit.BIC, "-", "-", "-"],
-            ["Anderson-Darling", f"{self.fit.AD:.4f}" if isinstance(self.fit.AD, (int,float)) else fit.AD, "-", "-", "-"],
+            ["Anderson-Darling", f"{self.fit.AD:.4f}" if isinstance(self.fit.AD, (int,float)) else self.fit.AD, "-", "-", "-"],
         ]
 
         table = plt.table(

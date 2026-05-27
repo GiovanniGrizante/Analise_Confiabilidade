@@ -51,27 +51,24 @@ def escolher_dist(planta, tag, metodo):
     print('7 - Todas')
     print('0 - Voltar')
 
-def escolher_grafico(metodo, distribuicao):
-    mult_metodos = len(metodo) > 1
+def escolher_grafico(planta, tag, metodo, distribuicao):
+    os.system('cls')
     mult_distribuicao = len(distribuicao) > 1
 
     if mult_distribuicao:
-        grafico_msg = 'Todos os gráficos'
+        dist_msg = 'Todas'
     else:
-        grafico_msg = f'Gráfico {distribuicao[0]}'
-
-    if mult_metodos:
-        nomes = [m.__name__ for m in metodo]
-        metodo_msg = f' - Método {", ".join(nomes)}'
-    else:
-        metodo_msg = ''
-
-    print(f'\n{grafico_msg}{metodo_msg} concluído!')
-
-    print('\n1 - Apresentar')
+        dist_msg = f'{distribuicao[0]}'
+        
+    print('=== ANÁLISE DE CONFIABILIDADE ===')
+    print('\n=== Análise Específica ===')
+    print('\n=== Opções Gráficas ===')
+    print(f'\nPlanta: {planta} | TAG: {tag} | Método: {metodo} | Distribuição: {dist_msg}')
+    print('\nOpções disponíveis:')
+    print('1 - Apresentar')
     print('2 - Salvar')
     print('3 - Continuar')
-    print('4 - Voltar')
+    print('0 - Voltar')
 
 def conclusao(planta, tag, metodo):
     os.system('cls')
@@ -82,8 +79,8 @@ def conclusao(planta, tag, metodo):
         print(f'\nPlanta: {planta} | TAG: {tag} | Método: {metodo[0].__name__}')
     else:
         print(f'\nPlanta: {planta} | TAG: {tag} | Método: Todos')
-    #print('\nProcesso concluído com sucesso!')
-    print('\n1 - Outra distribuição')
+    print('\nProcesso concluído com sucesso!')
+    print('1 - Outra distribuição')
     print('2 - Outro método')
     print('3 - Outra TAG')
     print('4 - Outra planta')

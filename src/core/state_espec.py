@@ -3,7 +3,9 @@ from ..ui import ui_espec
 from ..filters import filter_espec
 from ..dominio import distribuicoes
 
-import matplotlib.pyplot as plt, os
+import matplotlib.pyplot as plt, sys
+from pathlib import Path
+from datetime import datetime
 
 # Gerenciador do fluxo para análise específica
 class AnaliseEspecifica:
@@ -25,20 +27,29 @@ class AnaliseEspecifica:
         if planta is None:
             return None  # Voltar ao menu principal
 
+        # Limpeza da variável
+        self.contexto['planta'] = None
+        
         self.contexto['planta'] = planta
         return self.estado_tag
     
     # Menu para escolha da TAG
     def estado_tag(self):
-        ui_espec.escolher_tag(self.contexto['planta'])
+        # Verifica se a TAG inserida possui 4 caracteres. Caso 0, volta para o estado anterior.
+        tag = ''
+        while len(tag)!=4:
+            # Printa a UI do estado
+            ui_espec.escolher_tag(self.contexto['planta'])
+            
+            tag = input('\n\rDigite a TAG desejada: ')
 
-        tag = input('\nDigite a TAG desejada: ')
-
-        if tag == '0':
-            return self.estado_planta  # Voltar para escolha de planta
+            if tag == '0':
+                return self.estado_planta  # Voltar para escolha de planta
         
+        # Filtra os dados em uma lista e armazena no dict 'contexto'.
         data = filter_espec.main(self.contexto['planta'], tag)
         
+        # Se não houver dados, emitir informação de erro (GERAR ARQUIVO EXCEPTIONS) e pedir para o usuário escolher uma opção.
         if data is None:
             # Gerar classe de erros na exceptions.py
             # interface.Erro.tag
@@ -49,13 +60,19 @@ class AnaliseEspecifica:
                 '0': 'EXIT'
             }
             
-            opcao = questao('\nEscolha a opção: ', 
-                            list(opcoes.keys()))
+            opcao = questao('\nEscolha a opção: ', list(opcoes.keys()))
             
             return opcoes[opcao]
             
+        # Limpeza das variáveis para não colapsar os dados
+        self.contexto['data'] = None
+        self.contexto['tag'] = None
+        
+        # Armazena os dados
         self.contexto['data'] = data
         self.contexto['tag'] = tag
+        
+        # Próximo estado
         return self.estado_metodo
     
     # Menu para escolha do método de distribuição (Weibull, Exponencial...)
@@ -75,11 +92,16 @@ class AnaliseEspecifica:
         if met is None:
             return self.estado_tag
 
+        # Se escolher todos, varre o dict entre o primeiro e o último
         elif met == 'Todos':
             met = list(met_dict.values())[1:-1]
         
+        # Dados precisam estar em lista para não precisar de dois tratamentos diferentes
         else:
             met = [met]
+            
+        # Limpeza da variável
+        self.contexto['metodo'] = None
         
         self.contexto['metodo'] = met
         return self.estado_distribuicao
@@ -117,36 +139,46 @@ class AnaliseEspecifica:
 
         else:
             dist = [dist]
+            
+        # Limpeza da variável
+        self.contexto['distribuicao'] = None
 
         self.contexto['distribuicao'] = dist
         return self.estado_graficos
 
 
     def estado_graficos(self):
-        ui_espec.escolher_grafico(self.contexto['metodo'], self.contexto['distribuicao'])
-
         # Fechar todas as figuras geradas
-        plt.close('all')
+        # plt.close('all')
 
         # Iterar nas classes
         for classe_metodo in self.contexto['metodo']:
-            self.contexto['graficos'] = {}
+            
+            ui_espec.escolher_grafico(self.contexto['planta'],
+                                      self.contexto['tag'],
+                                      classe_metodo.__name__, 
+                                      self.contexto['distribuicao'])
 
             # Cria instância da classe (Weibull, Exponencial...)
             # Os parâmetros passados para a classe vão para __init__
             
             # Executa os tipos de distribuição escolhidos (CDF, SF...)
+            
+            self.contexto['graficos'] = None
             self.contexto['graficos'] = classe_metodo(self.contexto['data']).executar(self.contexto['distribuicao'])
 
-            opcoes_graf = {'1': self.apresentar_grafico,
-                        '2': self.salvar_grafico,
-                        '3': '3',
-                        '4': self.estado_distribuicao}
+            opcao_dict = {'0': self.estado_distribuicao,
+                          '1': self.apresentar_grafico,
+                          '2': lambda: self.salvar_grafico(classe_metodo),
+                          '3': ''}
             
-            usar_graf = questao('Escolha uma opção: ', list(opcoes_graf))
+            opcao = questao('Escolha uma opção: ', list(opcao_dict))
             
-            if usar_graf != '3':
-                return opcoes_graf[usar_graf]
+            if opcao == '0':
+                return opcao_dict[opcao]
+
+            else:
+                opcao_dict[opcao]()
 
         return self.estado_concluido
         
@@ -166,7 +198,7 @@ class AnaliseEspecifica:
             '0': 'EXIT'
         }
 
-        opcao = questao('\nEscolha uma opção: ', list(opcoes.keys()))
+        opcao = questao('Escolha uma opção: ', list(opcoes.keys()))
         return opcoes[opcao]
 
     # Função para apresentar os gráficos ao usuário
@@ -176,10 +208,17 @@ class AnaliseEspecifica:
         plt.close('all')
 
     # Função para salvar os gráficos na pasta do usuário
-    def salvar_grafico(self):
-        print('Em processo...')
-        time.sleep(4)
-        return self.estado_concluido
+    def salvar_grafico(self, classe_metodo):
+        today = datetime.now().strftime("%d-%m-%Y")
+        
+        graph_folder = (Path(__file__).parent.parent.parent / 'images' / 'Específico' / 
+                        self.contexto['planta'] / self.contexto['tag'] / classe_metodo.__name__ / f'{today}')
+        
+        graph_folder.mkdir(parents=True, exist_ok=True)
+        
+        for title, graph in self.contexto['graficos'].items():
+            plt.figure(graph)
+            plt.savefig(f'{graph_folder}\\{title}.png', dpi=600, bbox_inches='tight')
         
     # Lógica de execução
     def executar(self):

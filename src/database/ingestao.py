@@ -27,15 +27,20 @@ def db_ingestion(dir_raw, engine):
         '.parquet': pd.read_parquet
     }
 
-    # Leitura e ingestão dos dados
+    # Leitura e ingestão dos dados do diretório raw
     for file in dir_raw.iterdir():
         if file.suffix.lower() not in readers_form:
             print(f'Arquivo "{file.name}" não suportado')
             continue
 
+        # Executa a leitura do arquivo de acordo com o tipo identificado
         reader = readers_form[file.suffix.lower()]
+        
+        # Caso haja a coluna "Ordem", os dados da coluna são armazenados como string
+        # Etapa necessária para vincular notas com ordens
         data = reader(file, dtype={"Ordem": "string"})
 
+        # Armazena dados brutos sobrescrevendo caso exista
         data.to_sql(
             name = f'{file.stem.lower()}_raw',
             con = engine,
@@ -57,6 +62,3 @@ def main():
     # Adiciona os dados no database
     db_ingestion(dir_raw, engine)
     db_verification(dir_raw, engine)
-
-if __name__ == '__main__':
-    main()

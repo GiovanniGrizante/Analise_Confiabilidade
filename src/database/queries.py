@@ -43,6 +43,18 @@ def notas_clean(engine):
     with engine.begin() as conn:
         conn.exec_driver_sql(drop)
         conn.exec_driver_sql(create)
+        
+def criticidade_clean(engine):
+    drop = '''
+    DROP TABLE IF EXISTS critic_clean;
+    '''
+    
+    create = '''
+             CREATE TABLE critic_clean AS
+             SELECT
+                '''
+    
+    
 
 # Execução das funções
 def main():
