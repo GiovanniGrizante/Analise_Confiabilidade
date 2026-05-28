@@ -29,11 +29,17 @@ Sistema para análise estatística de falhas de equipamentos industriais, com fo
 O projeto segue princípios de **clean architecture** com separação clara entre:
 
 src/
+
 ├── core/ # Lógica de negócio (independente de UI)
+
 ├── ui/ # Interface terminal (substituível por GUI/API)
+
 ├── filters/ # Regras de filtragem e preparação de dados
+
 ├── dominio/ # Modelos de distribuições estatísticas
+
 ├── database/ # Persistência (SQLite + SQLAlchemy)
+
 └── settings/ # Configurações e utilitários
 
 ### Diferencial arquitetural
