@@ -146,7 +146,7 @@ class AnaliseEspecifica:
         self.contexto['distribuicao'] = dist
         return self.estado_graficos
 
-
+    # Menu para escolha do tratamento do gráfico gerado
     def estado_graficos(self):
         # Fechar todas as figuras geradas
         # plt.close('all')
@@ -170,7 +170,7 @@ class AnaliseEspecifica:
             opcao_dict = {'0': self.estado_distribuicao,
                           '1': self.apresentar_grafico,
                           '2': lambda: self.salvar_grafico(classe_metodo),
-                          '3': ''}
+                          '3': self.gerar_relatorio}
             
             opcao = questao('Escolha uma opção: ', list(opcao_dict))
             
@@ -218,7 +218,11 @@ class AnaliseEspecifica:
         
         for title, graph in self.contexto['graficos'].items():
             plt.figure(graph)
-            plt.savefig(f'{graph_folder}\\{title}.png', dpi=600, bbox_inches='tight')
+            plt.savefig(graph_folder / f'{title}.png', dpi=600, bbox_inches='tight')
+
+
+    def gerar_relatorio(self):
+        pass
         
     # Lógica de execução
     def executar(self):

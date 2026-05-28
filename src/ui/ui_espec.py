@@ -67,7 +67,7 @@ def escolher_grafico(planta, tag, metodo, distribuicao):
     print('\nOpções disponíveis:')
     print('1 - Apresentar')
     print('2 - Salvar')
-    print('3 - Continuar')
+    print('3 - Relatório')
     print('0 - Voltar')
 
 def conclusao(planta, tag, metodo):
