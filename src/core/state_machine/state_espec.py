@@ -1,11 +1,13 @@
-from .utils import questao
-from ..ui import ui_espec
-from ..filters import filter_espec
-from ..dominio import distribuicoes
+from ..services.utils import questao
+from ..services.graphic import show_graph, save_graph
+from ..services.report import create_report
 
-import matplotlib.pyplot as plt, sys
+from ...ui import ui_espec
+from ...filters import filter_espec
+from ...dominio import distribuicoes
+
+import sys
 from pathlib import Path
-from datetime import datetime
 
 # Gerenciador do fluxo para análise específica
 class AnaliseEspecifica:
@@ -168,9 +170,9 @@ class AnaliseEspecifica:
             self.contexto['graficos'] = classe_metodo(self.contexto['data']).executar(self.contexto['distribuicao'])
 
             opcao_dict = {'0': self.estado_distribuicao,
-                          '1': self.apresentar_grafico,
-                          '2': lambda: self.salvar_grafico(classe_metodo),
-                          '3': self.gerar_relatorio}
+                          '1': show_graph,
+                          '2': lambda: save_graph(self.contexto['planta'], self.contexto['tag'], classe_metodo.__name__, self.contexto['graficos']),
+                          '3': lambda: create_report(self.contexto['graficos'])}
             
             opcao = questao('Escolha uma opção: ', list(opcao_dict))
             
@@ -200,29 +202,6 @@ class AnaliseEspecifica:
 
         opcao = questao('Escolha uma opção: ', list(opcoes.keys()))
         return opcoes[opcao]
-
-    # Função para apresentar os gráficos ao usuário
-    def apresentar_grafico(self):
-        plt.show(block=False)
-        input('\nPressione Enter para fechar as figuras e continuar...')
-        plt.close('all')
-
-    # Função para salvar os gráficos na pasta do usuário
-    def salvar_grafico(self, classe_metodo):
-        today = datetime.now().strftime("%d-%m-%Y")
-        
-        graph_folder = (Path(__file__).parent.parent.parent / 'images' / 'Específico' / 
-                        self.contexto['planta'] / self.contexto['tag'] / classe_metodo.__name__ / f'{today}')
-        
-        graph_folder.mkdir(parents=True, exist_ok=True)
-        
-        for title, graph in self.contexto['graficos'].items():
-            plt.figure(graph)
-            plt.savefig(graph_folder / f'{title}.png', dpi=600, bbox_inches='tight')
-
-
-    def gerar_relatorio(self):
-        pass
         
     # Lógica de execução
     def executar(self):

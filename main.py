@@ -1,5 +1,6 @@
 from src.ui import base
-from src.core import state_critic, state_espec, utils
+from src.core.state_machine import state_critic, state_espec
+from src.core.services import utils
 from src.settings import folders
 from src.database import ingestao, queries
 
