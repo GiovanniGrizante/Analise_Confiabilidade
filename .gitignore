@@ -4,7 +4,8 @@ __pycache__/
 *.pyo
 
 # Pastas
-data/
+data/database/*
+data/raw/*
 outputs/
 Dados/
 images/

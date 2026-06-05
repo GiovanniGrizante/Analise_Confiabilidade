@@ -50,10 +50,26 @@ def criticidade_clean(engine):
     '''
     
     create = '''
-             CREATE TABLE critic_clean AS
-             SELECT
+            CREATE TABLE critic_clean AS
+            SELECT
+                Planta AS planta,
+                
+                CASE
+                    WHEN LENGTH(TRIM(TAG)) < 4
+                        THEN substr('0000' || TRIM(TAG), -4, 4)
+                    ELSE TRIM(TAG)
+                END AS tag,
+
+                TRIM(Localização) AS local,
+
+                TRIM(Criticidade) AS criticidade
+
+            FROM criticidade_raw
                 '''
-    
+
+    with engine.begin() as conn:
+        conn.exec_driver_sql(drop)
+        conn.exec_driver_sql(create)
     
 
 # Execução das funções
@@ -63,6 +79,7 @@ def main():
     # Executa as funções para geração dos queries
     ordens_clean(engine)
     notas_clean(engine)
+    criticidade_clean(engine)
 
 if __name__ == '__main__':
     main()
