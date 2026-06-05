@@ -1,0 +1,5 @@
+Mudanças:
+
+Adicionar:
+- Fazer código para gerar os relatórios PDF
+- Fazer análise por criticidade

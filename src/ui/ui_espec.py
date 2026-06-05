@@ -51,7 +51,7 @@ def escolher_dist(planta, tag, metodo):
     print('7 - Todas')
     print('0 - Voltar')
 
-def escolher_grafico(planta, tag, metodo, distribuicao):
+def escolher_processamento(planta, tag, metodo, distribuicao):
     os.system('cls')
     mult_distribuicao = len(distribuicao) > 1
 
@@ -65,9 +65,9 @@ def escolher_grafico(planta, tag, metodo, distribuicao):
     print('\n=== Opções Gráficas ===')
     print(f'\nPlanta: {planta} | TAG: {tag} | Método: {metodo} | Distribuição: {dist_msg}')
     print('\nOpções disponíveis:')
-    print('1 - Apresentar')
-    print('2 - Salvar')
-    print('3 - Relatório')
+    print('1 - Visualizar gráficos')
+    print('2 - Salvar gráficos')
+    print('3 - Gerar relatório')
     print('0 - Voltar')
 
 def conclusao(planta, tag, metodo):
