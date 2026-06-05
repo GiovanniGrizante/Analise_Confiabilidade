@@ -52,7 +52,10 @@ def criticidade_clean(engine):
     create = '''
             CREATE TABLE critic_clean AS
             SELECT
-                Planta AS planta,
+                CASE
+                    WHEN TRIM(Planta) = 'Orgânicos' THEN '1913'
+                    WHEN TRIM(Planta) = 'Sílica' THEN '1914'
+                END AS planta,
                 
                 CASE
                     WHEN LENGTH(TRIM(TAG)) < 4
